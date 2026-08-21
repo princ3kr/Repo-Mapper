@@ -8,8 +8,8 @@ Natural-language Q&A over any GitHub repository. Point it at a repo, and it buil
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                      API (FastAPI)                        │
-│  POST /api/parse  POST /api/chat  GET /api/graph/{id}     │
+│                      API (FastAPI)                       │
+│  POST /api/parse  POST /api/chat  GET /api/graph/{id}    │
 └────┬────────────────────┬────────────────────────────────┘
      │                    │
      ▼                    ▼
@@ -21,9 +21,9 @@ Natural-language Q&A over any GitHub repository. Point it at a repo, and it buil
      │                    │
      └────────┬───────────┘
               ▼
-     ┌────────────────┐
-     │  Neo4j + Qdrant │
-     └────────────────┘
+     ┌──────────────────┐
+     │  Neo4j + Qdrant  │
+     └──────────────────┘
 ```
 
 ---
