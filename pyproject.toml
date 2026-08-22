@@ -8,7 +8,7 @@ dependencies = [
     "networkx>=3.3",
     "pyvis>=0.3.2",
     "neo4j",
-    "qdrant-client[fastembed]",
+    "qdrant-client[fastembed]==1.14.3",
     "openai>=1.0.0",
     "langgraph>=0.1.0",
     "langchain_community>=0.2.0",

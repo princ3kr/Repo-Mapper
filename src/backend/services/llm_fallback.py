@@ -55,7 +55,6 @@ class FallbackChatModel:
 
     def __init__(self):
         from langchain_openai import ChatOpenAI
-        from langchain_groq import ChatGroq
 
         self.openai = ChatOpenAI(
             model="gpt-4o",
@@ -64,14 +63,22 @@ class FallbackChatModel:
             max_retries=2,
             timeout=30.0,
         )
-        self.groq = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            temperature=0,
-            max_tokens=2000,
-            timeout=60.0,
-        )
+        self._groq = None
         self._fallback_used = False
         self._last_error = None
+
+    @property
+    def groq(self):
+        if self._groq is None:
+            from langchain_groq import ChatGroq
+
+            self._groq = ChatGroq(
+                model="llama-3.3-70b-versatile",
+                temperature=0,
+                max_tokens=2000,
+                timeout=60.0,
+            )
+        return self._groq
 
     def with_structured_output(self, schema, **kwargs):
         from langchain_core.runnables import RunnableLambda
@@ -122,7 +129,7 @@ class FallbackChatModel:
 
     def __getattr__(self, name):
         """Delegate any unimplemented attributes to the active LLM."""
-        if name in ('_fallback_used', '_last_error', 'openai', 'groq', 'with_structured_output', 'invoke', '_invoke_with_fallback', 'load_dotenv'):
+        if name in ('_fallback_used', '_last_error', '_groq', 'openai', 'groq', 'with_structured_output', 'invoke', '_invoke_with_fallback', 'load_dotenv'):
             raise AttributeError(name)
         return getattr(self.groq if self._fallback_used else self.openai, name)
 
@@ -136,7 +143,9 @@ class FallbackStructuredOutput:
     def __init__(self, parent: FallbackChatModel, schema, kwargs):
         self.parent = parent
         self.openai_runnable = parent.openai.with_structured_output(schema, **kwargs)
-        self.groq_runnable = parent.groq.with_structured_output(schema, **kwargs)
+        self.schema = schema
+        self.kwargs = kwargs
+        self.groq_runnable = None
 
     def invoke(self, inputs, **kwargs):
         try:
@@ -159,6 +168,10 @@ class FallbackStructuredOutput:
                 logger.warning(f"[FALLBACK] Switching to Groq structured output (llama-3.3-70b-versatile)...")
                 self.parent._fallback_used = True
                 try:
+                    if self.groq_runnable is None:
+                        self.groq_runnable = self.parent.groq.with_structured_output(
+                            self.schema, **self.kwargs
+                        )
                     return self.groq_runnable.invoke(inputs, **kwargs)
                 except Exception as e2:
                     logger.error(f"[GROQ STRUCTURED ALSO FAILED] {type(e2).__name__}: {e2}")
